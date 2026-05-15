@@ -1,18 +1,18 @@
-# Mega Prompt: Email-Triage Execution Skill
+# Mega Prompt: Inbox-Triage — Email Recurring Execution Skill
 
 ## Role
 
-You are a **Skill Architect** specializing in recurring workflow automation. Generate a production-grade, distributable Claude skill that performs full inbox triage using a knowledge base produced by the companion `email-setup` skill.
+You are a **Skill Architect** specializing in recurring workflow automation. Generate a production-grade, distributable Claude skill that performs full inbox triage using a knowledge base produced by the companion `inbox-setup` skill.
 
 ## Output Target
 
-Single file: `${SKILLS_DIR}/email-triage/SKILL.md`
+Single file: `${SKILLS_DIR}/inbox-triage/SKILL.md`
 
 Word budget: 2,000–2,400 words. Hard ceiling: 2,500.
 
 ## Critical Pairing Note
 
-This skill is **paired with `email-setup`**. It consumes the knowledge base files that setup produces. The file contracts MUST match exactly. Generate this skill with that contract awareness.
+This skill is **paired with `inbox-setup`**. It consumes the knowledge base files that setup produces. The file contracts MUST match exactly. Generate this skill with that contract awareness.
 
 ## Skill Purpose
 
@@ -39,25 +39,44 @@ The generated skill must follow this structure:
 
 ```
 1. Prerequisites (KB files to read; fail-fast if missing)
-2. Step 1: Determine search window (date math + run label)
-3. Step 2: Search email provider (primary + secondary searches)
-4. Step 3: Classify emails (apply taxonomy)
-5. Step 4: Research new senders (web search, with skip logic)
-6. Step 5: Generate recommendations (apply evaluation framework)
-7. Step 6: Draft replies (with voice rules and NEVER-SEND rule)
-8. Step 7: Deliver report (per user's preference)
-9. Step 8: Update knowledge base
-10. Step 9: Internal log
-11. Step 10: Empty-inbox handling
-12. Critical rules (drafts only, privacy, accuracy, transparency)
+2. Step 0: Grill-Me Intake (light — 0-2 optional override questions)
+3. Step 1: Determine search window (date math + run label)
+4. Step 2: Search email provider (primary + secondary searches)
+5. Step 3: Classify emails (apply taxonomy)
+6. Step 4: Research new senders (web search, with skip logic)
+7. Step 5: Generate recommendations (apply evaluation framework)
+8. Step 6: Draft replies (with voice rules and NEVER-SEND rule)
+9. Step 7: Deliver report (per user's preference)
+10. Step 8: Update knowledge base
+11. Step 9: Internal log
+12. Step 10: Empty-inbox handling
+13. Critical rules (drafts only, privacy, accuracy, transparency)
 ```
+
+## Grill-Me Intake Specification
+
+Inbox-triage is intentionally **light-intake** — it runs on a recurring cadence with preferences pre-baked into the knowledge base from `inbox-setup`. The grill-me discipline here is asking only the override questions that matter THIS run.
+
+### Q1 (optional, asked only when on-demand run is outside normal cadence)
+
+> **Override the default 9-hour search window? Pick: yes (specify hours) / no (use default). *Why I'm asking:* If you're running on-demand outside your normal 2x/day cadence, you may want a wider or narrower window — e.g., 24h after a long break, 2h for a quick check.**
+
+Skip if cadence is normal.
+
+### Q2 (optional, asked only when user invokes with category-skip intent)
+
+> **Skip any categories this run? E.g., "skip newsletters", "skip financial". *Why I'm asking:* Sometimes you just want to scan opportunities or just want to clear active threads. Category skip narrows the run scope.**
+
+Skip if user gave no category-skip signal.
+
+**Stop condition:** Max 2 questions. Default invocations skip both questions and run with KB-default preferences. The skill is optimized for fast recurring execution; intake is the exception not the norm.
 
 ## Critical Improvements Over Naive Implementation
 
 The skill MUST address these production concerns:
 
 1. **Email-provider agnostic** — Define an adapter pattern: skill describes operations (“search emails after date X with filter Y”, “create draft in thread Z”) and notes the actual tool mapping per provider (Gmail MCP, Outlook MCP, IMAP, etc.).
-1. **Fail-fast on missing KB** — If knowledge base files don’t exist, halt and direct user to run `email-setup` first. Don’t try to operate without it.
+1. **Fail-fast on missing KB** — If knowledge base files don’t exist, halt and direct user to run `inbox-setup` first. Don’t try to operate without it.
 1. **Drafts only — never send** — Stated as non-negotiable rule, in multiple places in the skill. This is the safety property that makes the skill safe to run automatically.
 1. **Privacy discipline** — Don’t store passwords, account numbers, sensitive credentials in KB files. Reference threads by ID, not content.
 1. **Learning loop** — Document explicit pattern: after 5+ runs, review KB and suggest improvements to user based on observed override patterns.
@@ -225,19 +244,20 @@ Even with zero new emails:
 
 ## Trigger Phrases (for frontmatter description)
 
-- “triage my inbox”
-- “check my email”
-- “run email triage”
-- “process my inbox”
-- “what’s new in my email”
-- “handle my email”
-- “email triage”
+- "triage my inbox"
+- "inbox triage"
+- "check my email"
+- "run email triage"
+- "process my inbox"
+- "what's new in my email"
+- "handle my email"
+- "email triage"
 
 ## Error Handling Requirements
 
 |Situation                                   |Behavior                                                                              |
 |--------------------------------------------|--------------------------------------------------------------------------------------|
-|KB files missing                            |Halt, direct user to run `email-setup`                                                |
+|KB files missing                            |Halt, direct user to run `inbox-setup`                                                |
 |Email tool unavailable                      |Halt with clear message about required tool                                           |
 |Web search unavailable for sender research  |Skip research step; note senders not researched                                       |
 |Draft creation fails                        |Skip that draft; note in log; report continues                                        |
@@ -256,8 +276,8 @@ Document: skill auto-adapts based on which email tooling is available. If no ema
 
 ```yaml
 ---
-name: email-triage
-description: "Runs a full inbox triage using the knowledge base created by the 'email-setup' skill. Searches recent emails, classifies them via the user's taxonomy, researches new senders, generates recommendations, drafts replies (NEVER sends), delivers a report in the user's preferred format, and updates the knowledge base with learnings. Designed to run on a recurring schedule (1-3x daily) or on demand. Triggers: 'triage my inbox', 'check my email', 'run email triage', 'process my inbox', 'what's new in my email', 'handle my email', or any variation where the user wants their inbox processed. Requires the email-setup skill to have been run first."
+name: inbox-triage
+description: "Runs a full inbox triage using the knowledge base created by the 'inbox-setup' skill. Light-intake by design (most invocations skip questions and run with KB-default preferences); asks at most 2 grill-me override questions when invocation is outside normal cadence or includes category-skip intent. Searches recent emails, classifies them via the user's taxonomy, researches new senders, generates recommendations, drafts replies (NEVER sends), delivers a report in the user's preferred format, and updates the knowledge base with learnings. Designed to run on a recurring schedule (1-3x daily) or on demand. Triggers: 'triage my inbox', 'inbox triage', 'check my email', 'run email triage', 'process my inbox', 'what's new in my email', 'handle my email', 'email triage', or any variation where the user wants their inbox processed. Requires the inbox-setup skill to have been run first."
 ---
 ```
 
@@ -275,12 +295,16 @@ description: "Runs a full inbox triage using the knowledge base created by the '
 
 ## Validation Checklist (Run Before Delivery)
 
-- [ ] Frontmatter parses as YAML
+- [ ] Frontmatter parses as YAML (name: inbox-triage)
+- [ ] Output target path uses `${SKILLS_DIR}/inbox-triage/SKILL.md`
 - [ ] Word count 2,000–2,500
+- [ ] Grill-me intake: 0–2 OPTIONAL questions, light-intake discipline stated
+- [ ] Q1 (window override) skipped for normal cadence
+- [ ] Q2 (category skip) skipped when no skip-intent in invocation
 - [ ] All 10 steps documented
 - [ ] DRAFTS-ONLY rule stated in at least 2 places
-- [ ] KB file contracts match `email-setup` output exactly
-- [ ] Fail-fast behavior on missing KB documented
+- [ ] KB file contracts match `inbox-setup` output exactly
+- [ ] Fail-fast behavior on missing KB documented (directs user to inbox-setup)
 - [ ] Provider-agnostic adapter pattern documented
 - [ ] Learning loop (after 5+ runs) documented
 - [ ] 7+ failure modes covered
